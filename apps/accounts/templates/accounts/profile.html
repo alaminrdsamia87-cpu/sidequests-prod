@@ -1,166 +1,206 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load task_extras %}
 
 {% block title %}Mon profil — SideQuest{% endblock %}
 
+{% block extra_css %}
+<style>
+.sq-profile { max-width: 640px; margin: 0 auto; padding-bottom: 40px; }
+
+.sq-prof-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 24px 0 16px;
+}
+.sq-prof-avatar {
+  width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+  background: var(--sq-primary); display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 700; font-size: 20px; overflow: hidden;
+}
+.sq-prof-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sq-prof-info { flex: 1; min-width: 0; }
+.sq-prof-name { font-size: 18px; font-weight: 700; color: var(--sq-text); margin: 0; }
+.sq-prof-email { font-size: 13px; color: var(--sq-text-muted); margin: 0; }
+
+.sq-prof-rank {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 6px; padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  background: linear-gradient(135deg, #2D6A4F, #52B788);
+  color: white;
+}
+
+.sq-prof-stats {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 8px; margin-bottom: 22px;
+}
+.sq-prof-stat {
+  background: var(--sq-surface); border: 1px solid var(--sq-border-light);
+  border-radius: 14px; padding: 14px; text-align: center;
+}
+.sq-prof-stat-value { font-size: 20px; font-weight: 700; color: var(--sq-text); }
+.sq-prof-stat-value.gold { color: #F59E0B; }
+.sq-prof-stat-label { font-size: 10px; color: var(--sq-text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+.sq-section-title {
+  font-size: 15px; font-weight: 700; color: var(--sq-text);
+  margin: 0 0 10px; display: flex; align-items: center; gap: 6px;
+}
+
+.sq-prof-edit-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  border: 1px solid var(--sq-primary); color: var(--sq-primary); background: transparent;
+  cursor: pointer; transition: all 0.15s; margin-bottom: 14px;
+}
+.sq-prof-edit-btn:hover { background: var(--sq-primary); color: white; }
+
+.sq-prof-form {
+  background: var(--sq-surface); border: 1px solid var(--sq-border-light);
+  border-radius: 16px; padding: 20px; margin-bottom: 22px;
+}
+.sq-prof-form .form-group { margin-bottom: 14px; }
+.sq-prof-form label { display: block; font-size: 12px; font-weight: 600; color: var(--sq-text); margin-bottom: 4px; }
+.sq-prof-form input[type="text"],
+.sq-prof-form input[type="file"] {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--sq-border);
+  border-radius: 10px; font-size: 13px; background: var(--sq-bg); color: var(--sq-text);
+  box-sizing: border-box;
+}
+.sq-prof-form input:focus { outline: none; border-color: var(--sq-primary); }
+.sq-prof-form .btn-save {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 24px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  background: var(--sq-primary); color: white; border: none; cursor: pointer;
+}
+.sq-prof-form .btn-cancel {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: 8px;
+  padding: 10px 20px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  background: transparent; color: var(--sq-text-muted); border: 1px solid var(--sq-border-light);
+  cursor: pointer;
+}
+.sq-prof-form .form-actions { display: flex; align-items: center; gap: 8px; }
+
+.sq-prof-badges {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px;
+}
+.sq-prof-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--sq-surface); border: 1px solid var(--sq-border-light);
+  font-size: 12px; font-weight: 500; color: var(--sq-text);
+  text-decoration: none;
+}
+.sq-prof-badge-icon { font-size: 16px; line-height: 1; }
+
+@media (max-width: 480px) {
+  .sq-prof-stats { gap: 6px; }
+  .sq-prof-stat { padding: 10px; }
+  .sq-prof-stat-value { font-size: 17px; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
-        <a href="javascript:history.back()" class="btn-back" title="Retour">&#8592;</a>
-    <h1>Mon profil</h1>
-</div>
-<div class="profile-container">
-    <div class="profile-header">
-        {% if user.avatar %}
-            <img src="{{ user.avatar.url }}" alt="{{ user.full_name }}" class="profile-avatar">
-        {% else %}
-            <div class="profile-avatar profile-avatar-placeholder">{{ user.full_name|first|upper }}</div>
-        {% endif %}
-        <h1>{{ user.full_name }}</h1>
-        <p class="profile-email">{{ user.email }}</p>
-        {% if user.phone_number %}
-            <p class="profile-phone">
-                {{ user.phone_number }}
-                {% if user.phone_verified %}
-                    <span class="badge badge-success">Vérifié</span>
-                {% else %}
-                    <span class="badge badge-warning">Non vérifié</span>
-                {% endif %}
-            </p>
-        {% endif %}
-    </div>
+<div class="sq-profile">
 
-    <div class="profile-stats">
-        {% if profile.xp or profile.level %}
-        <div class="stat-card stat-card-xp">
-            <span class="stat-value">Niv. {{ profile.level }}</span>
-            <span class="stat-label">{{ profile.xp }} XP</span>
+  <div style="display:flex;align-items:center;gap:8px;padding:16px 0 0;">
+    <a href="javascript:history.back()" class="btn-back" title="Retour">&#8592;</a>
+  </div>
+
+  <div class="sq-prof-header">
+    <div class="sq-prof-avatar">
+      {% if user.avatar %}<img src="{{ user.avatar.url }}" alt="">{% else %}{{ user.full_name|first|upper }}{% endif %}
+    </div>
+    <div class="sq-prof-info">
+      <h1 class="sq-prof-name">{{ user.full_name }}</h1>
+      <p class="sq-prof-email">{{ user.email }}</p>
+      {% if profile.level %}
+      <div class="sq-prof-rank">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        {{ profile.level|rank_name }} · Niveau {{ profile.level }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if profile %}
+  <div class="sq-prof-stats">
+    <div class="sq-prof-stat">
+      <div class="sq-prof-stat-value">{{ profile.xp }}</div>
+      <div class="sq-prof-stat-label">XP</div>
+    </div>
+    <div class="sq-prof-stat">
+      <div class="sq-prof-stat-value">{{ profile.level }}</div>
+      <div class="sq-prof-stat-label">Niveau</div>
+    </div>
+    {% if user.is_tasker or user.role == 'both' %}
+    <div class="sq-prof-stat">
+      <div class="sq-prof-stat-value gold">{{ profile.tasker_rating_avg|floatformat:1 }}</div>
+      <div class="sq-prof-stat-label">Note</div>
+    </div>
+    <div class="sq-prof-stat">
+      <div class="sq-prof-stat-value">{{ profile.tasks_completed|default:"0" }}</div>
+      <div class="sq-prof-stat-label">Missions</div>
+    </div>
+    {% endif %}
+    {% if user.is_client or user.role == 'both' %}
+    <div class="sq-prof-stat">
+      <div class="sq-prof-stat-value gold">{{ profile.client_rating_avg|floatformat:1 }}</div>
+      <div class="sq-prof-stat-label">Note</div>
+    </div>
+    <div class="sq-prof-stat">
+      <div class="sq-prof-stat-value">{{ profile.tasks_published|default:"0" }}</div>
+      <div class="sq-prof-stat-label">Publiées</div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if user.badges_earned.exists %}
+  <h2 class="sq-section-title">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+    Badges
+  </h2>
+  <div class="sq-prof-badges">
+    {% for ub in user.badges_earned.all %}
+    <span class="sq-prof-badge">
+      <span class="sq-prof-badge-icon">{{ ub.badge.icon }}</span>
+      {{ ub.badge.name }}
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div x-data="{ editing: false }">
+    <button class="sq-prof-edit-btn" @click="editing = !editing" x-text="editing ? 'Annuler' : 'Modifier le profil'">
+      Modifier le profil
+    </button>
+    <div x-show="editing" x-transition.opacity.duration.200ms class="sq-prof-form">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
+          {{ form.full_name }}
         </div>
-        {% endif %}
-        {% if user.is_tasker or user.role == 'both' %}
-            <div class="stat-card">
-                <span class="stat-value">{{ profile.tasker_rating_avg }}</span>
-                <span class="stat-label">Note moyenne</span>
-                <span class="stat-count">({{ profile.tasker_rating_count }} avis)</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-value">{{ profile.tasks_completed }}</span>
-                <span class="stat-label">Tâches réalisées</span>
-            </div>
-        {% endif %}
-        {% if user.is_client or user.role == 'both' %}
-            <div class="stat-card">
-                <span class="stat-value">{{ profile.client_rating_avg }}</span>
-                <span class="stat-label">Note client</span>
-                <span class="stat-count">({{ profile.client_rating_count }} avis)</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-value">{{ profile.tasks_published }}</span>
-                <span class="stat-label">Tâches publiées</span>
-            </div>
-        {% endif %}
-        {% if user.is_tasker or user.role == 'both' %}
-        <div class="stat-card">
-            <span class="stat-value">{% if user.is_verified %}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>{% else %}—{% endif %}</span>
-            <span class="stat-label">Identité {% if user.is_verified %}vérifiée{% else %}en attente{% endif %}</span>
+        <div class="form-group">
+          <label for="{{ form.phone_number.id_for_label }}">{{ form.phone_number.label }}</label>
+          {{ form.phone_number }}
         </div>
-        {% endif %}
+        <div class="form-group">
+          <label for="{{ form.avatar.id_for_label }}">{{ form.avatar.label }}</label>
+          {{ form.avatar }}
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-save">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Enregistrer
+          </button>
+          <button type="button" class="btn-cancel" @click="editing = false">Annuler</button>
+        </div>
+      </form>
     </div>
+  </div>
 
-     {% if user.badges_earned.exists %}
-     <div class="profile-badges-glass">
-          <div class="badges-header-glass">
-              <div class="badges-title-wrapper">
-                  <h2 class="badges-title-glass">Mes Badges</h2>
-                  <span class="badges-count-glass">{{ user.badges_earned.count }}</span>
-              </div>
-          </div>
-         {% if user.role == 'both' %}
-             <div class="badge-category-glass">
-                 <div class="category-header-glass">
-                     <span class="category-emoji-glass"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></span>
-                     <h3 class="category-title-glass">Client</h3>
-                 </div>
-                 <div class="badges-showcase-glass">
-                     {% for ub in user.badges_earned.all %}
-                         {% if ub.badge.target_role == 'client' or ub.badge.target_role == 'both' %}
-                         <div class="badge-card-glass" style="--badge-hue: {{ ub.badge.color }}">
-                             <div class="badge-icon-glass">
-                                 <span class="badge-emoji-glass">{{ ub.badge.icon }}</span>
-                             </div>
-                             <div class="badge-info-glass">
-                                 <h4 class="badge-name-glass">{{ ub.badge.name }}</h4>
-                                 <span class="badge-date-glass"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg> {{ ub.earned_at|date:"M Y" }}</span>
-                                 {% if ub.badge.description %}
-                                 <p class="badge-desc-glass">{{ ub.badge.description }}</p>
-                                 {% endif %}
-                             </div>
-                         </div>
-                         {% endif %}
-                     {% endfor %}
-                 </div>
-             </div>
-             <div class="badge-category-glass">
-                 <div class="category-header-glass">
-                     <span class="category-emoji-glass"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
-                     <h3 class="category-title-glass">Tasker</h3>
-                 </div>
-                 <div class="badges-showcase-glass">
-                     {% for ub in user.badges_earned.all %}
-                         {% if ub.badge.target_role == 'tasker' or ub.badge.target_role == 'both' %}
-                         <div class="badge-card-glass" style="--badge-hue: {{ ub.badge.color }}">
-                             <div class="badge-icon-glass">
-                                 <span class="badge-emoji-glass">{{ ub.badge.icon }}</span>
-                             </div>
-                             <div class="badge-info-glass">
-                                 <h4 class="badge-name-glass">{{ ub.badge.name }}</h4>
-                                 <span class="badge-date-glass"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg> {{ ub.earned_at|date:"M Y" }}</span>
-                                 {% if ub.badge.description %}
-                                 <p class="badge-desc-glass">{{ ub.badge.description }}</p>
-                                 {% endif %}
-                             </div>
-                         </div>
-                         {% endif %}
-                     {% endfor %}
-                 </div>
-             </div>
-         {% else %}
-             <div class="badges-showcase-glass">
-                 {% for ub in user.badges_earned.all %}
-                 <div class="badge-card-glass" style="--badge-hue: {{ ub.badge.color }}">
-                     <div class="badge-icon-glass">
-                         <span class="badge-emoji-glass">{{ ub.badge.icon }}</span>
-                     </div>
-                     <div class="badge-info-glass">
-                         <h4 class="badge-name-glass">{{ ub.badge.name }}</h4>
-                         <span class="badge-date-glass"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg> {{ ub.earned_at|date:"M Y" }}</span>
-                         {% if ub.badge.description %}
-                         <p class="badge-desc-glass">{{ ub.badge.description }}</p>
-                         {% endif %}
-                     </div>
-                 </div>
-                 {% endfor %}
-             </div>
-         {% endif %}
-     </div>
-     {% endif %}
-
-    <div class="profile-edit">
-        <h2>Modifier le profil</h2>
-        <form method="post" enctype="multipart/form-data" class="form">
-            {% csrf_token %}
-            <div class="form-group">
-                {{ form.full_name.label_tag }}
-                {{ form.full_name }}
-            </div>
-            <div class="form-group">
-                {{ form.phone_number.label_tag }}
-                {{ form.phone_number }}
-            </div>
-            <div class="form-group">
-                {{ form.avatar.label_tag }}
-                {{ form.avatar }}
-            </div>
-            <button type="submit" class="btn btn-primary">Sauvegarder</button>
-        </form>
-    </div>
 </div>
 {% endblock %}

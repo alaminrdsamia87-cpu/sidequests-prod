@@ -5,7 +5,7 @@ from apps.accounts.decorators import client_required, tasker_required
 from django.contrib import messages
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.db.models import Q, Avg, Count, Prefetch
+from django.db.models import Q, Avg, Count, Prefetch, Sum
 from django.http import HttpResponseForbidden, JsonResponse
 from django.urls import reverse
 import json
@@ -144,6 +144,9 @@ def client_quests(request):
         tasks_completed__gt=0,
     ).select_related('user').order_by('-tasker_rating_avg', '-tasks_completed')[:5]
 
+    status_param = request.GET.get('status', 'all')
+    active_tab = status_param if status_param in ['drafts', 'published', 'in_progress', 'finished'] else 'all'
+
     context = {
         'tasks': tasks,
         'drafts': drafts,
@@ -157,6 +160,7 @@ def client_quests(request):
             badge__target_role__in=['client', 'both']
         ).order_by('-earned_at')[:10],
         'top_taskers': top_taskers,
+        'active_tab': active_tab,
     }
     return render(request, 'tasks/client_quests.html', context)
 
@@ -195,11 +199,15 @@ def tasker_dashboard(request):
     available_tasks = Task.objects.filter(
         status=Task.StatusChoices.PUBLISHED,
         assigned_tasker__isnull=True,
+    ).filter(
+        Q(deadline__isnull=True) | Q(deadline__gt=timezone.now())
     ).exclude(
         client=request.user
     ).exclude(
         id__in=my_applied_ids
-    ).select_related('client', 'category').order_by('-published_at')[:12]
+    ).select_related('client', 'category').order_by('-published_at')
+
+    total_available = available_tasks.count()
 
     top_taskers = UserProfile.objects.filter(
         user__role__in=['tasker', 'both'],
@@ -216,6 +224,26 @@ def tasker_dashboard(request):
         status=TaskApplication.StatusChoices.ACCEPTED
     ).select_related('task', 'task__client').order_by('-created_at')
 
+    now = timezone.now()
+    week_start = now - timezone.timedelta(days=now.weekday())
+    month_start = now.replace(day=1)
+    paid_statuses = [
+        Task.StatusChoices.VALIDATED,
+        Task.StatusChoices.RESOLVED,
+        Task.StatusChoices.EVALUATED,
+        Task.StatusChoices.CLOSED,
+    ]
+    earnings_week = Task.objects.filter(
+        assigned_tasker=request.user,
+        status__in=paid_statuses,
+        updated_at__gte=week_start,
+    ).aggregate(total=Sum('reward'))['total'] or 0
+    earnings_month = Task.objects.filter(
+        assigned_tasker=request.user,
+        status__in=paid_statuses,
+        updated_at__gte=month_start,
+    ).aggregate(total=Sum('reward'))['total'] or 0
+
     context = {
         'tasks': tasks,
         'active_tasks': active_tasks,
@@ -224,6 +252,9 @@ def tasker_dashboard(request):
         'top_taskers': top_taskers,
         'user_badges': user_badges,
         'my_applications': my_applications,
+        'earnings_week': earnings_week,
+        'earnings_month': earnings_month,
+        'total_available': total_available,
     }
     return render(request, 'tasks/tasker_dashboard.html', context)
 
@@ -291,6 +322,16 @@ def tasker_missions(request):
     rating_filter = request.GET.get('rating', '')
     category_filter = request.GET.get('category', '')
 
+    show_applications = (status_filter == 'applications')
+
+    if show_applications:
+        applications = TaskApplication.objects.filter(
+            tasker=request.user,
+            status=TaskApplication.StatusChoices.PENDING,
+        ).select_related('task__category').order_by('-created_at')
+    else:
+        applications = TaskApplication.objects.none()
+
     if status_filter == 'completed':
         base_qs = base_qs.filter(status__in=[
             Task.StatusChoices.VALIDATED, Task.StatusChoices.EVALUATED,
@@ -305,14 +346,10 @@ def tasker_missions(request):
             Task.StatusChoices.AWAITING_CONFIRMATION, Task.StatusChoices.COMPLETED,
         ])
 
-    if date_filter == 'week':
-        cutoff = now - timezone.timedelta(days=7)
-        base_qs = base_qs.filter(updated_at__gte=cutoff)
-    elif date_filter == 'month':
-        cutoff = now - timezone.timedelta(days=30)
-        base_qs = base_qs.filter(updated_at__gte=cutoff)
-    elif date_filter == '3months':
-        cutoff = now - timezone.timedelta(days=90)
+    if date_filter:
+        cutoff = now - timezone.timedelta(days={
+            'week': 7, 'month': 30, '3months': 90,
+        }.get(date_filter, 0))
         base_qs = base_qs.filter(updated_at__gte=cutoff)
 
     if price_sort == 'asc':
@@ -374,14 +411,20 @@ def tasker_missions(request):
         Task.StatusChoices.REJECTED,
     ]).count()
     pending_count = all_missions.filter(status=Task.StatusChoices.PUBLISHED).count()
+    applications_count = TaskApplication.objects.filter(
+        tasker=request.user,
+        status=TaskApplication.StatusChoices.PENDING,
+    ).count()
 
     context = {
-        'missions': missions,
+        'missions': missions if not show_applications else [],
+        'applications': applications,
         'categories': categories,
         'total_count': missions.count(),
         'active_count': active_count,
         'completed_count': completed_count,
         'pending_count': pending_count,
+        'applications_count': applications_count,
         'status_filter': status_filter,
         'date_filter': date_filter,
         'price_sort': price_sort,
@@ -468,8 +511,15 @@ def task_list(request):
     q = request.GET.get('q', '').strip()
     category_slug = request.GET.get('category', '').strip()
     location = request.GET.get('location', '').strip()
+    search_performed = request.GET.get('search') == '1'
 
-    tasks = Task.objects.filter(status=Task.StatusChoices.PUBLISHED)
+    from django.utils import timezone
+    now = timezone.now()
+    tasks = Task.objects.filter(
+        status=Task.StatusChoices.PUBLISHED
+    ).filter(
+        Q(deadline__isnull=True) | Q(deadline__gt=now)
+    )
 
     if q:
         tasks = tasks.filter(title__icontains=q)
@@ -495,6 +545,7 @@ def task_list(request):
         'search_q': q,
         'search_category': category_slug,
         'search_location': location,
+        'search_performed': search_performed,
     })
 
 
@@ -508,7 +559,7 @@ def task_detail(request, task_id):
         context['can_apply'] = False
         if task.status == Task.StatusChoices.PUBLISHED:
             context['applications'] = task.applications.filter(status=TaskApplication.StatusChoices.PENDING).select_related('conversation')
-    elif request.user.acting_as_tasker() and task.status == Task.StatusChoices.PUBLISHED:
+    elif request.user.acting_as_tasker() and task.status == Task.StatusChoices.PUBLISHED and not task.is_expired():
         already_applied = TaskApplication.objects.filter(task=task, tasker=request.user).exists()
         context['can_apply'] = not already_applied
 
@@ -520,7 +571,7 @@ def task_detail(request, task_id):
 def task_apply(request, task_id):
     task = get_object_or_404(Task, id=task_id)
 
-    if task.status != Task.StatusChoices.PUBLISHED:
+    if task.status != Task.StatusChoices.PUBLISHED or task.is_expired():
         messages.error(request, _('Cette tâche n\'est plus disponible.'))
         if request.htmx:
             return HttpResponse('<div style="display:none;" hx-swap-oob="true"></div>')
@@ -615,11 +666,11 @@ def task_cancel_application(request, task_id, application_id):
 
     if application.status != TaskApplication.StatusChoices.PENDING:
         messages.error(request, _('Vous ne pouvez annuler qu\'une candidature en attente.'))
-        return redirect('tasks:tasker_dashboard')
+        return redirect(request.META.get('HTTP_REFERER', 'tasks:tasker_missions'))
 
     application.delete()
     messages.success(request, _('Candidature annulée.'))
-    return redirect('tasks:tasker_dashboard')
+    return redirect(request.META.get('HTTP_REFERER', 'tasks:tasker_missions'))
 
 
 @login_required
@@ -1218,8 +1269,4 @@ def mark_notification_read(request, notification_id):
     notification.mark_read()
     notification.mark_opened()
 
-    if notification.related_task:
-        return redirect('tasks:task_detail', task_id=notification.related_task.id)
-    elif notification.related_conversation:
-        return redirect('messaging:conversation_detail', conversation_id=notification.related_conversation.id)
-    return redirect('tasks:notifications_list')
+    return redirect(request.META.get('HTTP_REFERER', 'tasks:notifications_list'))

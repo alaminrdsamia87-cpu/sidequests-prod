@@ -52,7 +52,7 @@
             <div class="td-body-header">
                 <h1 class="td-title">{{ task.title }}</h1>
                 <span class="td-cat-badge" style="background:{{ task.category.color|default:'#EEF2FF' }}20;color:{{ task.category.color|default:'#6366F1' }};">
-                    <span class="cat-icon-fallback">{{ task.category.icon|default:'' }}</span> {{ task.category.name }}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> {{ task.category.name }}
                 </span>
             </div>
 
@@ -107,7 +107,7 @@
                 <div class="td-info-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>
                 <div class="td-info-text">
                     <span class="td-info-label">Départ</span>
-                    <span class="td-info-value">{{ task.departure_address }}</span>
+                    <span class="td-info-value" style="white-space:normal;word-break:break-word;">{{ task.departure_address }}</span>
                 </div>
             </div>
             {% endif %}
@@ -119,7 +119,7 @@
                 <div class="td-map-pin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
                 <div class="td-map-addr">{{ task.arrival_address }}</div>
                 {% if task.arrival_lat and task.arrival_lng %}
-                <a href="https://www.openstreetmap.org/?mlat={{ task.arrival_lat }}&mlon={{ task.arrival_lng }}&zoom=15" target="_blank" class="td-btn td-btn-outline td-btn-sm">Ouvrir dans Maps</a>
+                <a href="https://www.google.com/maps?q={{ task.arrival_lat }},{{ task.arrival_lng }}" target="_blank" class="td-btn td-btn-outline td-btn-sm">Ouvrir dans Maps</a>
                 {% else %}
                 <a href="https://www.google.com/maps/search/?api=1&query={{ task.arrival_address|urlencode }}" target="_blank" class="td-btn td-btn-outline td-btn-sm">Ouvrir dans Maps</a>
                 {% endif %}
@@ -207,7 +207,7 @@
 .td-container {
     max-width: 720px;
     margin: 0 auto;
-    padding: 1rem 0 3rem;
+    padding: 1rem 12px 3rem;
 }
 
 /* Top bar */
@@ -269,6 +269,8 @@
     border: 1px solid var(--sq-border);
     border-radius: 16px;
     overflow: hidden;
+    overflow-wrap: break-word;
+    word-break: break-word;
     box-shadow: 0 1px 3px rgba(0,0,0,0.03);
 }
 
@@ -405,7 +407,7 @@
 /* Info grid */
 .td-info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 0.5rem;
 }
 
@@ -712,14 +714,25 @@
 .td-app-status.rejected { background: rgba(239,68,68,0.08); color: #dc2626; }
 
 @media (max-width: 640px) {
-    .td-container { padding: 0.5rem 0 2rem; }
+    .td-container { padding: 0.5rem 16px 2rem; }
     .td-publisher { flex-wrap: wrap; }
     .td-pub-actions { width: 100%; justify-content: flex-end; }
     .td-body-header { flex-direction: column; }
     .td-title { font-size: 1.1rem; }
-    .td-info-grid { grid-template-columns: repeat(2, 1fr); }
+    .td-info-grid { grid-template-columns: 1fr 1fr; }
+    .td-info-card-wide { grid-column: 1 / -1; }
     .td-actions-row { flex-direction: column; }
     .td-actions-row .td-btn { justify-content: center; }
+    .td-topbar { flex-wrap: wrap; gap: 0.4rem; }
+}
+@media (max-width: 400px) {
+    .td-container { padding: 0.5rem 12px 2rem; }
+    .td-info-grid { grid-template-columns: 1fr; }
+    .td-body { padding: 1rem 0.85rem; }
+    .td-publisher { padding: 0.85rem; }
+    .td-info-value { white-space: normal; word-break: break-word; }
+    .td-desc { word-break: break-word; }
+    .td-cat-badge { white-space: normal; word-break: break-word; }
 }
 </style>
 

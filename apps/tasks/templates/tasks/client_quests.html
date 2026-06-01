@@ -12,14 +12,14 @@
 </div>
 
 <div class="client-filters">
-    <button class="tab active" data-tab="all">Toutes ({{ tasks.count }})</button>
-    <button class="tab" data-tab="published">Publiées ({{ published.count }})</button>
-    <button class="tab" data-tab="in_progress">En cours ({{ in_progress.count }})</button>
-    <button class="tab" data-tab="finished">Terminées ({{ finished.count }})</button>
-    <button class="tab" data-tab="drafts">Brouillons ({{ drafts.count }})</button>
+    <a href="?status=all" class="tab {% if active_tab == 'all' %}active{% endif %}">Toutes ({{ tasks.count }})</a>
+    <a href="?status=published" class="tab {% if active_tab == 'published' %}active{% endif %}">Publiées ({{ published.count }})</a>
+    <a href="?status=in_progress" class="tab {% if active_tab == 'in_progress' %}active{% endif %}">En cours ({{ in_progress.count }})</a>
+    <a href="?status=finished" class="tab {% if active_tab == 'finished' %}active{% endif %}">Terminées ({{ finished.count }})</a>
+    <a href="?status=drafts" class="tab {% if active_tab == 'drafts' %}active{% endif %}">Brouillons ({{ drafts.count }})</a>
 </div>
 
-<div class="tab-content" id="tab-all">
+<div class="tab-content" id="tab-all"{% if active_tab != 'all' %} style="display:none;"{% endif %}>
 {% if tasks.exists %}
     <div class="client-task-list">
         {% for task in tasks %}
@@ -71,7 +71,7 @@
 {% endif %}
 </div>
 
-<div class="tab-content" id="tab-published" style="display:none;">
+<div class="tab-content" id="tab-published"{% if active_tab != 'published' %} style="display:none;"{% endif %}>
 {% if published.exists %}
     <div class="client-task-list">
         {% for task in published %}
@@ -103,7 +103,7 @@
 {% endif %}
 </div>
 
-<div class="tab-content" id="tab-in_progress" style="display:none;">
+<div class="tab-content" id="tab-in_progress"{% if active_tab != 'in_progress' %} style="display:none;"{% endif %}>
 {% if in_progress.exists %}
     <div class="client-task-list">
         {% for task in in_progress %}
@@ -144,7 +144,7 @@
 {% endif %}
 </div>
 
-<div class="tab-content" id="tab-finished" style="display:none;">
+<div class="tab-content" id="tab-finished"{% if active_tab != 'finished' %} style="display:none;"{% endif %}>
 {% if finished.exists %}
     <div class="client-task-list">
         {% for task in finished %}
@@ -188,7 +188,7 @@
 {% endif %}
 </div>
 
-<div class="tab-content" id="tab-drafts" style="display:none;">
+<div class="tab-content" id="tab-drafts"{% if active_tab != 'drafts' %} style="display:none;"{% endif %}>
 {% if drafts.exists %}
     <div class="client-task-list">
         {% for task in drafts %}
@@ -225,17 +225,3 @@
 {% endblock %}
 
 {% block dashboard_right %}{% endblock %}
-
-{% block extra_js %}
-<script>
-    document.querySelectorAll('.client-filters .tab').forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('.client-filters .tab').forEach(function(t) { t.classList.remove('active'); });
-            this.classList.add('active');
-            var tabId = this.getAttribute('data-tab');
-            document.querySelectorAll('.tab-content').forEach(function(c) { c.style.display = 'none'; });
-            document.getElementById('tab-' + tabId).style.display = 'block';
-        });
-    });
-</script>
-{% endblock %}

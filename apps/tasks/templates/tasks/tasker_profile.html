@@ -5,87 +5,182 @@
 
 {% block dashboard_content %}
 
-<div class="page-header">
-    <a href="{% url 'tasks:tasker_dashboard' %}" class="btn-back" title="Retour">&#8592;</a>
-    <h1>Mon Profil</h1>
-</div>
+{% with level=profile.level xp=profile.xp %}
+{% with next_xp=level|next_level_xp prev_xp=level|prev_level_xp %}
+{% with range_xp=next_xp|sub:prev_xp progress_xp=xp|sub:prev_xp %}
 
-{% with level=user.profile.level xp=user.profile.xp %}
+<style>
+/* ── Layout ── */
+.sq-profile { max-width: 640px; margin: 0 auto; padding-bottom: 90px; }
 
-<div class="profile-header">
-    <div class="profile-avatar">
-        {% if user.avatar %}
-        <img src="{{ user.avatar.url }}" alt="{{ user.full_name }}">
-        {% else %}
-        {{ user.full_name|first|upper }}
-        {% endif %}
+/* ── Header ── */
+.sq-prof-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 20px 0 16px;
+}
+.sq-prof-avatar {
+  width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+  background: var(--sq-primary); display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 700; font-size: 20px; overflow: hidden;
+}
+.sq-prof-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sq-prof-info { flex: 1; min-width: 0; }
+.sq-prof-name { font-size: 18px; font-weight: 700; color: var(--sq-text); margin: 0; }
+.sq-prof-title { font-size: 12px; color: var(--sq-text-muted); margin: 2px 0 0; }
+
+.sq-prof-rank {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin: 4px 0 2px; padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  background: linear-gradient(135deg, #2D6A4F, #52B788);
+  color: white;
+}
+
+/* ── Stats grid ── */
+.sq-prof-stats {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px; margin-bottom: 20px;
+}
+.sq-prof-stat {
+  background: var(--sq-surface); border: 1px solid var(--sq-border-light);
+  border-radius: 14px; padding: 12px; text-align: center;
+}
+.sq-prof-stat-value { font-size: 18px; font-weight: 700; color: var(--sq-text); }
+.sq-prof-stat-value.gold { color: #F59E0B; }
+.sq-prof-stat-label { font-size: 10px; color: var(--sq-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ── Section titles ── */
+.sq-section-title {
+  font-size: 15px; font-weight: 700; color: var(--sq-text);
+  margin: 0 0 10px; display: flex; align-items: center; gap: 6px;
+}
+
+/* ── Badges grid ── */
+.sq-prof-badges {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px;
+}
+.sq-prof-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--sq-surface); border: 1px solid var(--sq-border-light);
+  font-size: 12px; font-weight: 500; color: var(--sq-text);
+}
+.sq-prof-badge.locked { opacity: 0.35; filter: grayscale(1); }
+.sq-prof-badge-icon { font-size: 16px; line-height: 1; }
+
+/* ── Reputation / level card ── */
+.sq-rep-card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--sq-surface); border: 1px solid var(--sq-border-light);
+  border-radius: 14px; padding: 12px 16px; margin-bottom: 16px;
+  max-height: 72px; box-sizing: border-box;
+}
+.sq-rep-level {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, #2D6A4F, #52B788);
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 800; font-size: 14px;
+}
+.sq-rep-body { flex: 1; min-width: 0; }
+.sq-rep-name { font-size: 12px; font-weight: 600; color: var(--sq-text); }
+.sq-rep-bar { height: 4px; background: var(--sq-bg); border-radius: 99px; overflow: hidden; margin: 4px 0 2px; max-width: 160px; }
+.sq-rep-bar-fill { height: 100%; border-radius: 99px; background: var(--sq-primary); }
+.sq-rep-xp { font-size: 10px; color: var(--sq-text-muted); }
+.sq-rep-stats { display: flex; gap: 12px; flex-shrink: 0; }
+.sq-rep-stat { text-align: center; }
+.sq-rep-stat-value { font-size: 14px; font-weight: 700; color: var(--sq-text); line-height: 1.2; }
+.sq-rep-stat-value.gold { color: #F59E0B; }
+.sq-rep-stat-label { font-size: 9px; color: var(--sq-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ── Layout override ── */
+.dashboard-right { display: none !important; }
+.dashboard-main { width: 100% !important; }
+
+@media (max-width: 480px) {
+  .sq-prof-stats { grid-template-columns: 1fr 1fr; }
+}
+</style>
+
+<div class="sq-profile">
+
+  <div style="display:flex;align-items:center;gap:8px;padding:16px 0 0;">
+    <a href="javascript:history.back()" class="btn-back" title="Retour">&#8592;</a>
+  </div>
+
+  {# ═════ HEADER ═════ #}
+  <div class="sq-prof-header">
+    <div class="sq-prof-avatar">
+      {% if user.avatar %}<img src="{{ user.avatar.url }}" alt="">{% else %}{{ user.full_name|first|upper }}{% endif %}
     </div>
-    <h1 class="profile-name">{{ user.full_name }}</h1>
-    <p class="profile-title">Niveau {{ level }} · {{ level|rank_name }} · <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0.5" style="vertical-align:middle;margin:-2px 1px 0 0;color:#FFD60A;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> {{ user.profile.tasker_rating_avg|floatformat:1 }}</p>
-    <div class="profile-stats-row">
-        <div class="profile-stat">
-            <div class="profile-stat-value">{{ xp }} XP</div>
-            <div class="profile-stat-label">Expérience</div>
-        </div>
-        <div class="profile-stat">
-            <div class="profile-stat-value">Niv. {{ level }}</div>
-            <div class="profile-stat-label">Niveau</div>
-        </div>
-        <div class="profile-stat">
-            <div class="profile-stat-value">{{ user.profile.tasks_completed|default:"0" }}</div>
-            <div class="profile-stat-label">Missions</div>
-        </div>
-        <div class="profile-stat">
-            <div class="profile-stat-value"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0.5" style="vertical-align:middle;margin:-2px 1px 0 0;color:#FFD60A;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> {{ user.profile.tasker_rating_avg|floatformat:1 }}</div>
-            <div class="profile-stat-label">Note moyenne</div>
-        </div>
+    <div class="sq-prof-info">
+      <h1 class="sq-prof-name">{{ user.full_name }}</h1>
+      <div class="sq-prof-rank">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        {{ level|rank_name }} · Niveau {{ level }}
+      </div>
+      <p class="sq-prof-title">Note · {{ profile.tasker_rating_avg|floatformat:1 }}</p>
     </div>
+  </div>
+
+  {# ═════ STATS ═════ #}
+  <div class="sq-prof-stats">
+    <div class="sq-prof-stat">
+      <div class="sq-prof-stat-value">{{ xp }} XP</div>
+      <div class="sq-prof-stat-label">Expérience</div>
+    </div>
+    <div class="sq-prof-stat">
+      <div class="sq-prof-stat-value">{{ profile.tasks_completed|default:"0" }}</div>
+      <div class="sq-prof-stat-label">Missions</div>
+    </div>
+    <div class="sq-prof-stat">
+      <div class="sq-prof-stat-value gold">{{ profile.tasker_rating_avg|floatformat:1 }}</div>
+      <div class="sq-prof-stat-label">Note</div>
+    </div>
+    <div class="sq-prof-stat">
+      <div class="sq-prof-stat-value">{{ profile.tasker_rating_count|default:"0" }}</div>
+      <div class="sq-prof-stat-label">Avis</div>
+    </div>
+  </div>
+
+  {# ═════ XP BAR ═════ #}
+  <div class="sq-rep-card">
+    <div class="sq-rep-level">{{ level }}</div>
+    <div class="sq-rep-body">
+      <div class="sq-rep-name">{{ level|rank_name }}</div>
+      <div class="sq-rep-bar">
+        <div class="sq-rep-bar-fill" style="width:{% if progress_xp >= range_xp %}100{% else %}{% widthratio progress_xp range_xp 100 %}{% endif %}%;"></div>
+      </div>
+      <div class="sq-rep-xp">{{ progress_xp }} / {{ range_xp }} XP</div>
+    </div>
+  </div>
+
+  <a href="{% url 'tasks:task_list' %}" class="btn-link" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;margin-bottom:18px;border:1px dashed var(--sq-primary);border-radius:14px;color:var(--sq-primary);font-weight:600;font-size:14px;text-decoration:none;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Explorer les missions disponibles
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </a>
+
+  {# ═════ BADGES ═════ #}
+  {% if all_badges %}
+  <h2 class="sq-section-title">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+    Badges
+  </h2>
+  <div class="sq-prof-badges">
+    {% for badge in all_badges %}
+    <span class="sq-prof-badge {% if badge.slug not in earned_slugs %}locked{% endif %}">
+      <span class="sq-prof-badge-icon">{{ badge.icon }}</span>
+      {{ badge.name }}
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
 </div>
 
 {% endwith %}
-
-{% if all_badges %}
-<div class="badges-section">
-    <div class="section-header">
-        <h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg> Badges</h2>
-        <a href="{% url 'badges:my_badges' %}" class="section-link">Voir tout →</a>
-    </div>
-    <div class="badges-grid">
-        {% for badge in all_badges %}
-        <div class="badge-cell {% if badge.slug not in earned_slugs %}locked{% endif %}">
-            <span class="badge-cell-icon">{{ badge.icon }}</span>
-            <span class="badge-cell-name">{{ badge.name }}</span>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-<div class="stats-box">
-    <div class="section-header">
-        <h2>Statistiques détaillées</h2>
-    </div>
-    <div class="stats-box-item">
-        <span class="stats-box-value">{{ user.profile.xp }} XP</span>
-        <span class="stats-box-label">Total XP</span>
-    </div>
-    <div class="stats-box-item">
-        <span class="stats-box-value">{{ user.profile.tasks_completed }}</span>
-        <span class="stats-box-label">Missions complétées</span>
-    </div>
-    <div class="stats-box-item">
-            <span class="stats-box-value"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0.5" style="vertical-align:middle;margin:-2px 2px 0 0;color:#FFD60A;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> {{ user.profile.tasker_rating_avg|floatformat:2 }}</span>
-        <span class="stats-box-label">Note moyenne</span>
-    </div>
-    <div class="stats-box-item">
-        <span class="stats-box-value">{{ user.profile.tasker_rating_count }}</span>
-        <span class="stats-box-label">Nombre d'avis</span>
-    </div>
-    <div class="stats-box-item">
-        <span class="stats-box-value">{{ user.profile.level }}</span>
-        <span class="stats-box-label">Niveau</span>
-    </div>
-</div>
+{% endwith %}
+{% endwith %}
 
 {% endblock %}
 
