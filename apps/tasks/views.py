@@ -559,7 +559,7 @@ def task_detail(request, task_id):
         context['can_apply'] = False
         if task.status == Task.StatusChoices.PUBLISHED:
             context['applications'] = task.applications.filter(status=TaskApplication.StatusChoices.PENDING).select_related('conversation')
-    elif request.user.acting_as_tasker() and task.status == Task.StatusChoices.PUBLISHED and not task.is_expired():
+    elif request.user.acting_as_tasker() and task.status == Task.StatusChoices.PUBLISHED and not task.is_expired:
         already_applied = TaskApplication.objects.filter(task=task, tasker=request.user).exists()
         context['can_apply'] = not already_applied
 
@@ -571,7 +571,7 @@ def task_detail(request, task_id):
 def task_apply(request, task_id):
     task = get_object_or_404(Task, id=task_id)
 
-    if task.status != Task.StatusChoices.PUBLISHED or task.is_expired():
+    if task.status != Task.StatusChoices.PUBLISHED or task.is_expired:
         messages.error(request, _('Cette tâche n\'est plus disponible.'))
         if request.htmx:
             return HttpResponse('<div style="display:none;" hx-swap-oob="true"></div>')
