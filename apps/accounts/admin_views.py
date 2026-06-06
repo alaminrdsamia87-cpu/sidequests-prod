@@ -1,3 +1,4 @@
+from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
@@ -11,11 +12,15 @@ User = get_user_model()
 
 
 def admin_required(view_func):
-    return user_passes_test(
-        lambda u: u.is_authenticated and u.is_admin(),
-        login_url='accounts:login',
-        redirect_field_name=None,
-    )(view_func)
+    @wraps(view_func)
+    def _wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('accounts:login')
+        if not request.user.is_admin():
+            messages.error(request, _('Accès réservé aux administrateurs.'))
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return _wrapper
 
 
 @admin_required
