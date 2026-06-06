@@ -5,6 +5,11 @@
 
         <div class="topbar-right">
             {% if user.is_authenticated %}
+            {% if user.is_admin %}
+            <a href="{% url 'accounts:profile' %}" class="topbar-icon-btn" title="Mon profil">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </a>
+            {% else %}
             <a href="{% url 'messaging:conversation_list' %}" class="topbar-icon-btn" id="nav-msg-link" style="position:relative;">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 {% if unread_messages_count %}<span style="position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#EF4444;border:2px solid var(--sq-surface);"></span>{% endif %}
@@ -20,6 +25,7 @@
                 <span></span>
                 <span></span>
             </button>
+            {% endif %}
             {% else %}
             <a href="{% url 'accounts:login' %}" class="topbar-login-btn">Connexion</a>
             <a href="{% url 'accounts:register' %}" class="topbar-register-btn">S'inscrire</a>
@@ -27,7 +33,7 @@
         </div>
     </div>
 
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and not user.is_admin %}
     <div class="topbar-menu-overlay" x-show="menuOpen" @click="menuOpen = false" x-transition.opacity style="display:none;"></div>
     <div class="topbar-menu" x-show="menuOpen" x-transition:enter="topbar-menu-enter" x-transition:enter-start="topbar-menu-enter-start" x-transition:enter-end="topbar-menu-enter-end" x-transition:leave="topbar-menu-leave" x-transition:leave-start="topbar-menu-leave-start" x-transition:leave-end="topbar-menu-leave-end" style="display:none;">
         <div class="topbar-menu-header">
