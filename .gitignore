@@ -38,3 +38,6 @@ server_*.log
 _check_emoji.py
 check_*.py
 !check_migration*.py
+
+# Firebase
+*firebase-adminsdk*.json
