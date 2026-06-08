@@ -120,11 +120,23 @@
 /* ── Available cards ── */
 .avail-grid {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 16px;
   margin-bottom: 80px;
+  background: rgba(245, 240, 235, 0.5);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.04);
 }
+.avail-grid::-webkit-scrollbar { display: none; }
 .avail-card {
+  flex-shrink: 0;
+  width: 280px;
   background: #fff;
   border: 0.5px solid #E5E5E0;
   border-left: 3px solid #1B4332;
@@ -132,14 +144,14 @@
   padding: 14px 16px;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   transition: box-shadow 0.15s;
 }
 .avail-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
 .avail-card-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: #D8F3DC;
   display: flex;
   align-items: center;
