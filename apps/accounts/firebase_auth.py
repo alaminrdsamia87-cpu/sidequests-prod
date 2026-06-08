@@ -17,7 +17,7 @@ def _get_credential():
     path = settings.FIREBASE_SERVICE_ACCOUNT_PATH
     if path and os.path.exists(path):
         return credentials.Certificate(path)
-    json_str = os.environ.get('FIREBASE_SERVICE_ACCOUNT')
+    json_str = settings.FIREBASE_SERVICE_ACCOUNT or os.environ.get('FIREBASE_SERVICE_ACCOUNT')
     if json_str:
         return credentials.Certificate(json.loads(json_str))
     raise RuntimeError(

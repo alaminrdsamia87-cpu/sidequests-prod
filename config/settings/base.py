@@ -8,7 +8,15 @@ env = environ.Env(
     DEBUG=(bool, True),
 )
 
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+env_files = [
+    Path.home() / '.env',
+    BASE_DIR / '.env',
+    Path(os.environ['ENV_FILE']) if os.environ.get('ENV_FILE') else None,
+]
+
+for env_file in env_files:
+    if env_file and env_file.exists():
+        environ.Env.read_env(str(env_file), overwrite=True)
 
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-me-in-production')
 
@@ -95,6 +103,7 @@ SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
 FIREBASE_APP_NAME = 'sidequest'
 FIREBASE_SERVICE_ACCOUNT_PATH = env('FIREBASE_SERVICE_ACCOUNT_PATH', default='')
+FIREBASE_SERVICE_ACCOUNT = env('FIREBASE_SERVICE_ACCOUNT', default='')
 FIREBASE_API_KEY = env('FIREBASE_API_KEY', default='')
 FIREBASE_AUTH_DOMAIN = env('FIREBASE_AUTH_DOMAIN', default='')
 FIREBASE_PROJECT_ID = env('FIREBASE_PROJECT_ID', default='')
