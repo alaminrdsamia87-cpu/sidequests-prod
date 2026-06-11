@@ -180,27 +180,31 @@ class GoogleCallbackView(View):
             messages.error(request, 'Pas d\'id_token dans la réponse Google.')
             return redirect('accounts:login')
 
-        from apps.accounts.firebase_auth import verify_firebase_token
-        decoded = verify_firebase_token(id_token)
-        if not decoded:
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+
+        request_obj = google_requests.Request()
+        try:
+            decoded = google_id_token.verify_oauth2_token(id_token, request_obj, settings.GOOGLE_CLIENT_ID)
+        except Exception:
             messages.error(request, 'Token Google invalide.')
             return redirect('accounts:login')
 
-        firebase_uid = decoded.get('uid')
+        google_sub = decoded.get('sub')
         email = decoded.get('email', '')
         name = decoded.get('name', email.split('@')[0] if email else 'Utilisateur')
 
-        user = CustomUser.objects.filter(firebase_uid=firebase_uid).first()
+        user = CustomUser.objects.filter(firebase_uid=google_sub).first()
         if not user:
             user = CustomUser.objects.filter(email=email).first()
             if user:
-                user.firebase_uid = firebase_uid
+                user.firebase_uid = google_sub
                 user.save(update_fields=['firebase_uid'])
             else:
                 user = CustomUser.objects.create_user(
                     email=email,
                     full_name=name,
-                    firebase_uid=firebase_uid,
+                    firebase_uid=google_sub,
                 )
                 user.email_verified = True
                 user.save(update_fields=['email_verified'])
